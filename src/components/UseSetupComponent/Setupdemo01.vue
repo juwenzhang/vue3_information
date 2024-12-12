@@ -1,7 +1,7 @@
 <template>
   <div class="demo01">
     <h3>{{ message }}</h3>
-    <button @click="[changeMessage, changeInfo]">修改信息</button>
+    <button @click="[changeMessage,changeInfo]">修改信息</button>
   </div>
 </template>
 
@@ -25,10 +25,14 @@
     }
   })
 
-  const emits = defineEmits(["changeInfo"])
-  const changeInfo = () => {
-    emits("changeInfo", "hello world")
+  const emits = defineEmits(["changeInfoDemo"])
+  const changeInfo = (message) => {
+    emits("changeInfoDemo", message)
   }
+
+  defineExpose({
+    emits
+  })
 </script>
 
 <style scoped>

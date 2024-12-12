@@ -7,8 +7,6 @@
 
 
 ## setup 函数的使用
-
-
 ### 回顾 vue2
 > * **学习组件的嵌套使用**
 > * **学习组件的通信**
@@ -135,6 +133,7 @@
 >     * 所以说我们就可以使用 context.emit 来实现发送以前的事件
 > * 同时我们在进行传递我们的数据的时候
 >   * 我们是可以通过我们的添加 readonly 属性来进行限制子组件中进行的修改的
+> * 同时需要主要注意的是通过我们的 reactive 定义的响应式数据结构后就不是响应式数据了
 
 
 #### 其他函数的补充
@@ -213,3 +212,425 @@
 ### 实现暴露我们的组件中的方法 defineExpose
 > * 这个时候我们就可以实现的是我们的在一个组件中获取另一个组件的实例并且调用内部暴露的方法了
 > * `defineExpose({})`
+
+## vue router 的使用
+> * 这个就是实现的是编写我们的路由
+> * 路由就是用来实现的是我们的进行前端页面的切换
+>   * 在最开始的时候我们的页面的切换是通过我们的后端路由进行渲染
+>   * 但是现在的话我们就是使用的是我们的通过前端路由进行的页面渲染
+> * 但是在现在的后端开发中任然也是需要开发后端路由的
+>   * 后端路由的话就是实现的是和前端路由进行一一对应的
+>   * 前端路由通过对对应的后端路由发送请求响应，从而实现整个项目的开发
+
+### 前端路由的发展过程
+> * 在进行我们的架构一个网络的时候，我们是需要进行的是实现我们的路由器以及交换机
+> * 路由器主要进行的是维护我们的一个映射表
+>   * 从而实现我们的路由的跳转
+>   * 映射表会帮助我们决定数据在网络中的流向
+>   * 同时路由器之间进行查找的实现，是通过的是我们的 ip 地址进行的查找来实现的
+>     * ip 地址就是由我们的**主机地址 + 网络地址**构成的
+
+#### 后端路由（后端渲染）
+> * 一个网站是由我们的多个网页构成的
+> * 然后后端给我们进行下载就是从服务器获取得到的 html 文本
+> * 从而实现最终的网页的渲染
+> * 所以说就有了以前的前后端不分离的开发模式，纯牛马开发模式
+>   * 每一个 url 映射 一个html 网页
+>   * 这个就是我们的后端路由，
+>   * 通过后端来实现映射每一个 url 和 html网页之间的对应关系
+
+#### 当前的开发模式（前端渲染）
+> * 当前的开发模式就是我们的使用 SPA 的开发模式了
+> * SPA 就是我们的 single page application
+> * 单页面项目，这个就是通过的是我们的前端渲染
+>   * 通过路由的切换，从而呈现出不同的组件呈现
+>   * 前端通过切换 url 从而来实现页面渲染不同的页面了
+>   * 这样之后就可以减少对我们服务器的压力减少
+> * **前端路由的核心: 就是我们的页面进行实现切换的时候，页面不会进行整体刷新**
+>   * 实现的方式含有两种: 第一种是 hash 模式 ，另一种模式就是 history
+>     * 第一种实现的步骤就是改变页面的 url hash 值，从而达到页面的不刷新, #
+>       * 就是实现的是我们的修改 **location.hash** 来实现的修改，从而实现页面的刷新
+>       * 这个就是我们的 hash 模式了
+>     * 第二种的实现的方案就是我们的使用 history 模式实现页面的不刷新
+>       * history 模式原生具备的一些方法
+>         * replaceState 替换原本的路径
+>         * pushState 使用新的路径
+>         * popState 路径的回退
+>         * go 指定需要跳转的路径
+>         * forward | back 向前向后进行修改我们的网页
+>       * 这些方法都是属于我们的 BOM 的，window 中的方法
+
+### vue-router
+> * 在我们的不同的框架中实现使用的 router 就不同了
+>   * angular 中使用的就是我们的 ngRouter
+>   * React 中使用的就是我们的 ReactRouter
+>   * Vue 中使用的就是我们的 vue-router
+> * 这些路由就是实现的是将我们的 url 路径和组件之间实现一一映射起来
+>   * 从而实现我们的页面的路径发送变化的时候，组件发生对应的变化切换
+>   * `npm install vue-router` 生产依赖
+
+#### 创建前端路由映射关系
+> * 一般实现我们前端路由的开发，
+>   * 首先需要的是在我们的 src 下面创建一个 router 文件夹
+>   * 在这个里面来实现创建路由映射关系文件 index.js/ts | route.js/ts
+> * 同时这里我们就可以区分一下我们的组件了
+>   * 组件的分类
+>   * 全局组件: 就是在 main.js/ts 中实现全局注册的组件
+>   * 局部组件: 就是只有通过导入后才可以实现的组件
+>   * 普通组件: 就是只是在某个路由中需要呈现的组件，但是并不参与路由的映射, components
+>   * 路由组件: 就是我们的进行路由匹配的时候需要书写的主键，书写在 views 目录中的组件
+
+```javascript
+// 配置路由对应关系
+import { createRouter, createWebHashHistory } from "vue-router"
+// 开始导入我们的路由组件
+import Home from "../views/Home.vue"
+import About from "../views/About.vue"
+import Category from "../views/Category.vue"
+
+// 开始实现创建路由
+const router = createRouter({
+    // 创建映射关系
+    mode: "history",
+    history: createWebHashHistory(),
+    routes: [
+        {
+            path: '/',
+            component: Home },
+        {
+            path: "/about",
+            component: About },
+        {
+            path: "/category",
+            component: Category
+        }
+    ]
+})
+
+export default router
+```
+
+```javascript
+// 全局使用路由 main.js
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router/index.js'
+
+const app = createApp(App)
+
+// 使用路由
+app.use(router)
+
+app.mount("#app")
+```
+
+```vue
+<template>
+  <div class="app">
+    <div class="route">
+      <router-link to="/" class="route-item" active-class="active">
+        <button>首页 Home</button>
+      </router-link>
+      <router-link to="/About" class="route-item" active-class="active">
+        <button>关于 About</button>
+      </router-link>
+      <router-link to="/Category" class="route-item" active-class="active">
+        <button>分类 Category</button>
+      </router-link>
+    </div>
+    <div class="content">
+      <router-view></router-view>
+    </div>
+  </div>
+</template>
+
+<script setup name="App">
+</script>
+
+<style scoped>
+  .app {
+    .route {
+      width: 80%;
+      margin: 0 auto;
+      flex-direction: row;
+      display: flex;
+      justify-content: space-between;
+
+      .route-item {
+        text-decoration: none;
+        button {
+          width: 120px;
+          height: 30px;
+          line-height: 30px;
+          text-align: center;
+        }
+
+        button:hover{
+          background: deepskyblue;
+          cursor: pointer;
+        }
+      }
+
+      .active button {
+        background: indianred;
+      }
+    }
+    .content {
+      width: 80%;
+      margin: 0 auto;
+      position: absolute;
+      text-align: center;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: 50px
+    }
+  }
+</style>
+```
+> * 上面的就是创建的是我们最简单的路由实现了
+> * 首先实现创建了我们的路由匹配关系文件，并且指定使用的是 hash 模式
+> * 然后全局使用路由，通过 main.js 来实现使用路由
+> * 最后就是在我们的根组件中使用我们的路由
+>   * hash 模式的路径 是**具备我们的 # 的**
+>   * history 模式是**不具备我们的 # 的**
+>   * 还有用于 SSR 的时候使用的 **memory** 模式
+
+#### router-link 中的属性
+> * **to 属性**
+>   * 指定的是我们的路由匹配的具体路径
+> * **replace** 
+>   * 用于指定我们的网页不记录上一次浏览过的网页(不常用)
+> * **to 属性传递对象**
+>   * `to='{path: "/Home"}'`
+> * **active-class**
+>   * 就是实现的是指定处于激活状态的路由所处的样式
+>   * 这个样式是可以自定义别名或者使用内置的样式名的
+>     * 内置的样式选择器名: **router-link-active**
+
+### 路由懒加载
+> * 在我们的一个页面的加载过程中，每个页面中的业务逻辑是很多的
+> * 这个时候我们就需要实现使用我们的路由懒加载
+>   * 路由懒加载就是进行我们的分包的处理
+>   * 实现路由懒加载就是在我们进行路由配置文件的时候使用我们的
+>     * import 函数实现导入，从而实现路由懒加载
+>     * import 函数实现导入的时候实现的是我们的返回 Promise
+>     * 同时在我们进行打包的时候，是可以实现分包处理的
+>     * 这样就可以实现我们的首屏渲染速度了
+```javascript
+import { createRouter, createWebHashHistory } from "vue-router"
+
+// 开始导入我们的路由组件
+const Home = () => import("../views/Home.vue")
+const About = () => import("../views/About.vue")
+const Category = () => import("../views/Category.vue")
+
+// 开始实现创建路由
+const router = createRouter({
+    // 创建映射关系
+    mode: "history",
+    history: createWebHashHistory(),
+    routes: [
+        {
+            path: '/Home',
+            component: Home
+        },
+        {
+            path: "/about",
+            component: About
+        },
+        {
+            path: "/category",
+            component: Category,
+            name: "category",
+            meta: {
+                
+            }
+        },
+        {
+            path: "/",
+            redirect: "/Home",
+        }
+    ]
+})
+
+export default router
+```
+
+#### 路由其他属性设置
+> * **name属性** 就是实现的是我们的设置一个识别符
+> * **meta 自定义属性** object 来实现自定义属性
+
+### 动态路由
+> * 就是实现的是我们的动态路由的匹配
+> * 因为我们的有些路由的跳转是会跟随着我们的一些动态参数的
+> * 这个时候我们就可以使用 动态路由模式来实现了
+> * 最基本的体现就是我们的在原本的匹配路径后面添加
+>   * `/:id` 这个id 就是我们后面需要动态传递的参数了
+>   * 这个时候我们的路由模式就是实现的是动态匹配了
+> * 获取不同的用户 id 的方法
+>   * 如果说是在对应的路由组件中进行获取的话
+>     * 我们就可以使用 $route.params.动态匹配字段名
+>   * 或者说使用 vue-router 提供的一个 hooks 函数来实现
+>     * useRoute
+
+```javascript
+import { createRouter, createWebHashHistory } from "vue-router"
+
+// 开始导入我们的路由组件
+const Home = () => import("../views/Home.vue")
+const About = () => import("../views/About.vue")
+const Category = () => import("../views/Category.vue")
+const User = () => import("../views/User.vue")
+
+// 开始实现创建路由
+const router = createRouter({
+    // 创建映射关系
+    mode: "history",
+    history: createWebHashHistory(),
+    routes: [
+        {
+            path: '/home',
+            component: Home
+        },
+        {
+            path: "/about",
+            component: About
+        },
+        {
+            path: "/category",
+            component: Category
+        },
+        {
+            path: "/user/:username",
+            component: User,
+        },
+        {
+            path: "/",
+            redirect: "/home",
+        }
+    ]
+})
+
+export default router
+```
+
+```vue
+<template>
+  <div class="User">
+    <template v-if="$route.params.username">
+      <h2>我是 User: {{ $route.params.username }} 路由组件</h2>
+    </template>
+    <template v-else>
+      <h2>我是 User 路由组件</h2>
+    </template>
+  </div>
+</template>
+
+<script setup name="User">
+  import { useRoute, onBeforeRouteUpdate } from "vue-router"
+
+  const route = useRoute()
+  console.log(route.params.username)
+
+  onBeforeRouteUpdate((to, from) => {
+    console.log(to.params.username)
+    console.log(from.params.username)
+  })
+</script>
+
+<style scoped></style>
+```
+
+### NotFound 路由配置
+> * 就是通过我们的正则的样式进行书写或者说使用我们的内置的写法即可
+> * `path: "/:pathMatch(.*)*"`
+```javascript
+import { createRouter, createWebHashHistory } from "vue-router"
+
+// 开始导入我们的路由组件
+const Home = () => import("../views/Home.vue")
+const About = () => import("../views/About.vue")
+const Category = () => import("../views/Category.vue")
+const User = () => import("../views/User.vue")
+
+// 开始实现创建路由
+const router = createRouter({
+    // 创建映射关系
+    mode: "history",
+    history: createWebHashHistory(),
+    routes: [
+        {
+            path: '/home',
+            component: Home
+        },
+        {
+            path: "/about",
+            component: About
+        },
+        {
+            path: "/category",
+            component: Category
+        },
+        {
+            path: "/user/:username",
+            component: User,
+        },
+        {
+            path: "/:pathMatch(.*)*",
+            component: () => import("../views/NotFound.vue"),
+        },
+        {
+            path: "/",
+            redirect: "/home",
+        }
+    ]
+})
+
+export default router
+```
+
+### 嵌套路由
+> * 就是通过 children 来实现的配置
+```javascript
+const routes = [
+  {
+    path: '/user/:id',
+    component: User,
+    children: [
+      {
+        // 当 /user/:id/profile 匹配成功
+        // UserProfile 将被渲染到 User 的 <router-view> 内部
+        path: 'profile',
+        component: UserProfile,
+      },
+      {
+        // 当 /user/:id/posts 匹配成功
+        // UserPosts 将被渲染到 User 的 <router-view> 内部
+        path: 'posts',
+        component: UserPosts,
+      },
+    ],
+  },
+]
+```
+
+### 编程式导航
+> * 编程式导航就是通过的是我们的通过函数的形式实现我们的路由的跳转
+> * 通过绑定元素的点击来实现页面的跳转，从而实现我们的编程式导航的实现
+> * 通过我们的 useRouter 来获取我们的路由对象(注意上面获取动态路由的是 useRoute)
+>   * 然后通过路由对象实现路由的跳转
+
+```javascript
+  import {useRouter} from "vue-router"
+  const router = useRouter()
+
+  const toHome = () => {
+    router.push({
+      path: "/home",
+      query: {
+        
+      }
+    })
+  }
+```
