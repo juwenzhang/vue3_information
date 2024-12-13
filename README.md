@@ -634,3 +634,140 @@ const routes = [
     })
   }
 ```
+
+### 动态添加路由
+> * 在我们以前的话，我们通过的是我们的在 router 中进行的添加的路由的配置
+>   * 但是在我们的程序中运行中还会有很多的变动
+>   * 这个时候，我们就可以使用我们的动态添加路由来实现我们的添加路由
+>   * 这个就是常用于我们的后台管理系统中的
+>     * 后台管理系统是为了实现的是开发人员可以实现我们的图形化界面的操作数据
+>     * 但是这个时候我们就需要实现的是对不同的用户添加不同的功能
+> * 开发中这种的解决方案具有两种
+>   * 第一种是我们的根据不用的角色进行细致的区分
+>     * 实现的是隐藏我们路由的显示
+>     * 但是实际上的话对应的菜单还是有被注册的
+>   * 第二种实现形式就是根据不同的角色进行不同的区分
+>     * 这个时候我们的路由实现的是动态的添加来实现的
+
+#### addRoute 实现添加路由（对应的反义方法是 removeRoute）
+> * 在某种情况下我们就可以实现我们的动态的添加我们的路由
+> * 通过我们的路由对象来实现添加的我们的路由
+>   * 我们是可以实现的是我们的动态的添加一级路由或者二级路由
+>     * hasRoute 判断路由是否存在
+>     * getRoute 获取所有的路由信息
+
+```javascript
+import { createRouter, createWebHistory } from "vue-router"
+
+// 开始导入我们的路由组件
+const Home = () => import("../views/Home.vue")
+const About = () => import("../views/About.vue")
+const Category = () => import("../views/Category.vue")
+const User = () => import("../views/User.vue")
+
+// 开始实现创建路由
+const router = createRouter({
+    // 创建映射关系
+    history: createWebHistory(),
+    routes: [
+        {
+            path: '/home',
+            component: Home,
+            name: "home"
+        },
+        {
+            path: "/about",
+            component: About
+        },
+        {
+            path: "/category",
+            component: Category,
+            children: []
+        },
+        {
+            path: "/user/:username",
+            component: User,
+        },
+        {
+            path: "/:pathMatch(.*)*",
+            component: () => import("../views/NotFound.vue"),
+        },
+        {
+            path: "/",
+            redirect: "/home",
+        }
+    ]
+})
+
+// 开始实现判断是否是我们的管理员
+let isAdmin = false
+if (isAdmin) {
+    // 如果是我们的管理员，那就直接实现添加我们的路由
+    router.addRoute({
+        path: "/admin",
+        component: () => import("../views/Admin.vue"),
+    })
+}
+
+let isVip = true
+if (isVip) {
+    router.addRoute("home", {
+        path: "vip",
+        component: () => import("../views/Vip.vue"),
+    })
+}
+
+console.log(router.getRoutes())
+console.log(router.hasRoute("/admin"))
+
+export default router
+```
+
+### 路由导航守卫
+#### 前置导航守卫 router.beforeEach
+> * 最常见的使用的场景就是在我们的进入某些页面的时候需要用户进行登录，否则就进入不了的操作
+>   * 这个就是实现的是我们的进行在页面跳转的时候，进行我们的跳转拦截
+> * 这个时候我们就可可以使用我们的路由导航守卫
+>   * 用户登录成功直接进入首页或者说提前获取用户上次进入的页面，跳转该页面即可
+> * 导航守卫含有我们的前置守卫，一个是我们的后置守卫
+```javascript
+// 业务需求
+/*
+* 这里需要注意的是，我们进行判断用户是否实现了登录，
+* 我们需要进行的是在我们的 localStorage 中保存 token
+* 情况一: 用户没有登录，就实现的是跳转到我们的登录页面
+* 情况二: 用户已经登录，那么直接进入订单页面
+* 
+* token 的设置在我们的登录界面的时候就实现设置
+* token 的取消就在我们的退出界面实现设置即可
+* */
+router.beforeEach((to, from) => {
+    // 开始获取我们的 token ，用来实现判断我们是否处于登录状态
+    const token = localStorage.getItem("token")
+    if (!token && to.path === "/user") {
+        return "/login"
+    }
+    if (!token && to.path === "/admin") {
+        return "/login"
+    }
+    if (!token && to.path === "/category") {
+        return "/login"
+    }
+    if (!token && to.path === "/about") {
+        return "/login"
+    }
+})
+```
+#### 路由导航的整体流程
+* 首先实现的是我们的**导航被激活**
+* 然后在我们**失活的组件中调用 beforeRouteLeave 守卫**
+* 执行**全局配置的前置导航守卫 beforeEach**
+* 在被**激活的组件中调用 beforeRouteUpdate 守卫**
+* 然后进行 beforeEnter 守卫
+* 解析**异步路由组件（就是我们的懒加载的组件，通过 import 函数导入的组件）**
+* 在被**激活的组件中使用 beforeRouteEnter 守卫**
+* 调用全局的 beforeResolve 守卫
+* 导航被确定
+* 调用全局 后置导航守卫 **afterEach**
+* 触发 DOM 更新
+* 调用 beforeRouteEnter 守卫给 next 函数执行

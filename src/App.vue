@@ -2,16 +2,32 @@
   <div class="app">
     <div class="route">
       <router-link to="/home" class="route-item" active-class="active">
-        <button>首页 Home</button>
+        <transition>
+          <keep-alive>
+            <button>首页 Home</button>
+          </keep-alive>
+        </transition>
       </router-link>
       <router-link to="/about" class="route-item" active-class="active">
-        <button>关于 About</button>
+        <transition>
+          <keep-alive>
+            <button>关于 About</button>
+          </keep-alive>
+        </transition>
       </router-link>
       <router-link to="/category" class="route-item" active-class="active">
-        <button>分类 Category</button>
+        <transition>
+          <keep-alive>
+            <button>分类 Category</button>
+          </keep-alive>
+        </transition>
       </router-link>
       <router-link to="/user" class="route-item" active-class="active">
-        <button>用户 User</button>
+        <transition>
+          <keep-alive>
+            <button>用户 User</button>
+          </keep-alive>
+        </transition>
       </router-link>
     </div>
     <div class="content">
