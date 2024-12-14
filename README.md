@@ -771,3 +771,271 @@ router.beforeEach((to, from) => {
 * 调用全局 后置导航守卫 **afterEach**
 * 触发 DOM 更新
 * 调用 beforeRouteEnter 守卫给 next 函数执行
+
+## Vuex 状态管理工具
+### 认识状态管理工具
+> * 我们的实际的开发中，我们使用的状态管理工具是
+>   * vue 的状态管理工具是 vuex | pinia
+>   * react 的状态管理工具是 redux
+> * 在实际的开发中，我们的组件中含有的一些性能有：
+>   * 控制状态的数据
+>   * 修改状态的行为事件
+>   * 视图展示层面
+> * 以前的实现
+>   * 以前是通过一些组件通信来实现的
+>   * 但是现在我们可以使用状态管理工具
+>   * 把这些工具实现扁平化的实现管理
+> * 使用状态管理工具实现的我们的开发
+>   * 对于很多的组件都是共享的
+> * 纯函数式的编程语言
+> * 不同使用场景的状态管理库的选择
+>   * vue2 中使用vuex
+>   * vue3 中使用 pinia
+
+#### 安装 vuex
+> * `npm install vuex`
+
+#### 定义状态管理中的 state
+> * 为了我们可以在外部进行全局的使用，我们可以直接在 main.js 中实现全局注册 store
+```javascript
+import store from './store/useStore.js'
+
+const app = createApp(App)
+
+// 使用路由
+app.use(router)
+
+// 全局使用我们的状态工具
+app.use(store)
+```
+> * 在我们的 store 中定义我们需要进行管理的state
+>   * 通过我们的状态管理工具管理的状态是具有响应式的
+>   * 同时在状态管理之外的组件中是不可以进行直接修改其状态的
+>     * 这里需要进行的是简介性的修改状态
+```javascript
+import {createStore} from "vuex"
+
+// 开始定义我们的 store
+const store = createStore({
+    // 定于i我们的状态
+    state: () => (
+        {
+            counter: 0
+        }
+    )
+})
+
+export default store
+```
+> * 在其他组件中使用我们的 store
+>   * 这个时候，我们全局中就含有了我们的 $store 来实现访问我们的状态
+>   * 如果在 JS 中想要获取得到我们的 store 数据，我们需要使用 useStore 来实现
+>   * 下面的数据，我们还是可以定义在我们的 computed 中实现显示的
+```javascript
+<template>
+  <div class="Home">
+    <h2>我是 Home 路由组件</h2>
+    <h2>{{ $store.state.counter }}</h2>
+  </div>
+</template>
+```
+
+### vuex 状态管理注意点
+> * 我们的 vuex 状态管理的话，在整个程序中只能有一个状态管理的 store
+>   * 这个就是我们的单一状态管理树
+> * 但是 pinia 的话，想写几个状态管理就写几个状态管理树
+>   * pinia 的话更加的灵活
+> * 同时 vuex 由于是单一的状态管理库
+>   * 所以说就需要我们进行全局注册后进行使用
+>   * 这样后才可以在组件中通过我们的 useStore 来控制其的使用
+
+```javascript
+import {createStore} from "vuex"
+
+// 开始定义我们的 store
+const store = createStore({
+    // 定于i我们的状态
+    state: () => (
+        {
+            counter: 0
+        }
+    ),
+
+    mutations: {
+        increment: (state) => {
+            state.counter++
+        }
+    }
+})
+
+export default store
+```
+```vue
+<template>
+  <div class="Home">
+    <h2>我是 Home 路由组件</h2>
+    <h2>{{ storeData }}</h2>
+    <h2>{{ $store.state.counter }}</h2>
+    <button @click="increment">+1</button>
+  </div>
+</template>
+
+<script setup name="Home">
+  import { useStore } from "vuex"
+  import {computed} from "vue";
+
+  const store = useStore()
+
+  const storeData = computed(() => {
+    return store.state.counter
+  })
+
+  function increment() {
+    // commit 的字符串是我们的状态管理工具中提供的 mutation 函数
+    store.commit("increment")
+  }
+</script>
+
+<style scoped></style>
+```
+
+### 通过映射来获取我们的状态属性
+> * 这里的话使用的就是我们的 mapState 方法实现的
+> * 他帮助了我们获取状态管理中的每一个数据的实现
+> * 同时返回的是函数，但是函数中实现绑定的是 this.store.state 来实现获取的我们的数据
+> * 所以说在进行解析的时候需要手动的绑定我们的 store 来正常的获取元素
+> * 这个也是实现的是我们手动绑定 this 来解决的思路
+
+#### 原本的使用映射的使用步骤
+```javascript
+import {createStore} from "vuex"
+
+// 开始定义我们的 store
+const store = createStore({
+    // 定于i我们的状态
+    state: () => (
+        {
+            counter: 0,
+            name: "juwenzhang",
+            age: 18
+        }
+    ),
+
+    mutations: {
+        increment: (state) => {
+            state.counter++
+        }
+    }
+})
+
+export default store
+```
+```vue
+<template>
+  <div class="Home">
+    <h2>我是 Home 路由组件</h2>
+    <h2>{{ storeCounter }}-{{ storeName }}-{{ storeAge }}</h2>
+    <h2>{{ SMCounter }}-{{ SMName }}-{{ SMAge }}</h2>
+    <h2>{{ $store.state.counter }}</h2>
+    <button @click="increment">+1</button>
+  </div>
+</template>
+
+<script setup name="Home">
+  import { useStore, mapState } from "vuex"
+  import { computed } from "vue";
+
+  const store = useStore()
+
+  const storeCounter = computed(() => {
+    return store.state.counter
+  })
+
+  const storeName = computed(() => {
+    return store.state.name
+  })
+
+  const storeAge = computed(() => {
+    return store.state.age
+  })
+
+  // 通过映射回来的都是一些函数
+  // 同时在组合式的写法中，计算属性就是传递的是函数
+  // 同时我们为了减轻元素中的逻辑，我们状态管理的变量就是通过的是我们的计算属性来实现的
+  const { counter, name, age } = mapState(["counter", "name", "age"])
+  // 每个函数内部的查找的规则是通过 this.$store。state 来查找的我们的属性
+  const SMCounter = computed(counter.bind({$store: useStore()}))
+  const SMName = computed(name.bind({$store: useStore()}))
+  const SMAge = computed(age.bind({$store: useStore()}))
+
+  function increment() {
+    // commit 的字符串是我们的状态管理工具中提供的 mutation 函数
+    store.commit("increment")
+  }
+</script>
+
+<style scoped></style>
+```
+#### 实现封装上述的映射关系函数
+```javascript
+import { mapState, useStore } from "vuex"
+import { computed } from "vue"
+
+export function useGetStoreFN(mapper) {
+    const store = useStore()
+    const getStoreObj = mapState(mapper)  // 实现的获取到了每一个的函数对象
+    let newStoreObj = {}
+
+    Object.keys(getStoreObj).forEach((key) => {
+        // 内部的函数的调用使用的是我们的 this.$store 获得数据，所以说直接绑定他即可
+        // store.state 可以实现获取我们的状态管理数据的
+        newStoreObj[key] = computed(getStoreObj[key]
+            .bind({store: store}))
+    })
+
+    return newStoreObj
+}
+```
+
+### vuex 中的 getters 的使用
+> * getters 就是我们的组件中的 computed
+> * 就是我们的数据的变化并不是直接提供我们的原始数据而是实现得是提供变化后的数据
+> * 这个时候就可以使用我们的 getters
+
+```javascript
+import {createStore} from "vuex"
+
+// 开始定义我们的 store
+const store = createStore({
+    // 定于i我们的状态
+    state: () => (
+        {
+            counter: 1,
+            name: "juwenzhang",
+            age: 18
+        }
+    ),
+
+    mutations: {
+        increment: (state) => {
+            state.counter++
+        }
+    },
+
+    getters: {
+        doubleCounter: (state) => {
+            return state.counter * 2
+        },
+
+        // 第一个参数是我们的 state ，第二个参数是我们的 getters
+        message: (state, getters) => {
+            // 这里还可以返回一个函数的
+            // 函数内部再来进行返回我们的新的函数
+            // 这个就是函数式编程了
+            return `${getters.doubleCounter} and ${state.name} and ${state.age}`
+        }
+    }
+})
+
+export default store
+```
