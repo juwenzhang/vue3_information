@@ -1,5 +1,6 @@
 <template>
-  <div class="app">
+  <canvas ref="canvasRef" id="canvas"></canvas>
+  <div class="app" ref="appRef">
     <div class="route">
       <router-link to="/home" class="route-item" active-class="active">
         <transition>
@@ -37,9 +38,39 @@
 </template>
 
 <script setup name="App">
+  import {onMounted, ref} from "vue"
+  import { DrawCanvas } from "./utils/canvas.js"
+  import { My_debounce } from "./utils/My_debounce.js"
+
+  const canvasRef = ref(null)
+
+  onMounted(() => {
+    let drawCanvas = new DrawCanvas(0, 0, canvasRef)
+    drawCanvas.renderCanvas()
+    function clickNotCanvas() {
+      drawCanvas.updateCanvas()
+    }
+
+    const timer = setInterval(() => {
+      clickNotCanvas()
+      clearInterval(timer)
+    }, 1000)
+  })
 </script>
 
 <style scoped>
+  #app {
+    padding: 0;
+    margin: 0;
+  }
+  #canvas {
+    padding: 0;
+    margin: -8px;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    z-index: 1;
+  }
   .app {
     .route {
       width: 80%;
@@ -68,13 +99,14 @@
       }
     }
     .content {
+      background: white;
       width: 80%;
       margin: 0 auto;
       position: absolute;
       text-align: center;
       left: 0;
       right: 0;
-      top: 50px
+      top: 50px;
     }
   }
 </style>
