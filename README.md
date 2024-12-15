@@ -899,7 +899,7 @@ export default store
 <style scoped></style>
 ```
 
-### 通过映射来获取我们的状态属性
+### 通过映射来获取我们的状态属性 state
 > * 这里的话使用的就是我们的 mapState 方法实现的
 > * 他帮助了我们获取状态管理中的每一个数据的实现
 > * 同时返回的是函数，但是函数中实现绑定的是 this.store.state 来实现获取的我们的数据
@@ -978,6 +978,7 @@ export default store
 ```
 #### 实现封装上述的映射关系函数
 ```javascript
+// 可以将其整合到我们的 utils 中去
 import { mapState, useStore } from "vuex"
 import { computed } from "vue"
 
@@ -1039,3 +1040,377 @@ const store = createStore({
 
 export default store
 ```
+
+#### getters 的映射
+> * 就是使用的是我们的 mapGetters 来实现我们的映射
+> * 同时这个还是返回的是函数，内部返回值是我们的 $store.getters
+> * 所以说也是需要通过计算属性进行一系列的操作的
+
+```javascript
+const { doubleCounter, message } = mapGetters(["doubleCounter", "message"])
+const SMDoubleGetters = computed(doubleCounter.bind({ $store: useStore() }))
+const SMMessageGetters = computed(message.bind({ $store: useStore() }))
+```
+
+### vuex 中的 mutation 的使用
+> * 如果我们需要更改 vuex 中的 store.state 的状态
+> * 推荐使用的是我们的 mutation 中提供的方法来进行修改，
+>   * 使用的时候，我们使用 commit 进行提交即可
+> * 不建议直接在组件中通过某种方法来进行修改我们的状态
+
+```javascript
+  const store = useStore()
+  const changeName = function() {
+    store.commit("changeName", "76433")
+  }
+
+  function increment() {
+    // commit 的字符串是我们的状态管理工具中提供的 mutation 函数
+    store.commit("increment")
+  }
+```
+```javascript
+    mutations: {
+        // 第一个参数接收我们的状态管理数据 state
+        // 第二个参数接收的是我们的需要接收的参数
+        increment: (state) => {
+            state.counter++
+        },
+
+        decrement: (state) => {
+            state.counter--
+        },
+
+        changeName: (state, payload) => {
+            state.name = payload
+        }
+    }
+```
+> * 同时我们在实际的开发中我们还是可以给我们的 mutation 定义常量来表示的
+>   * 这个是官方推荐写法
+>   * 可以把存储常量的文件命名为 mutationType.js/ts
+> * 在状态管理文件中我们使用 [] 包裹我们的常量即可
+```javascript
+export const CHANGE_NAME = "CHANGE_NAME"
+```
+```javascript
+    mutations: {
+    // 第一个参数接收我们的状态管理数据 state
+    // 第二个参数接收的是我们的需要接收的参数
+    increment: (state) => {
+        state.counter++
+    },
+
+        decrement: (state) => {
+        state.counter--
+    },
+
+        [CHANGE_NAME]: (state, payload) => {
+        state.name = payload
+    }
+},
+```
+```javascript
+const changeName = function() {
+    store.commit(CHANGE_NAME, "76433")
+}
+```
+#### 映射使用
+> * mapMutations 来实现我们的映射
+> * 最后获得的结果在组合式中还是需要进行动态绑定 this 的
+```javascript
+const change_name = computed(mapMutations(["CHANGE_NAME"]).CHANGE_NAME
+    .bind({ $store: store }, ["76433"]))
+```
+> * vuex 中的 mutation 是尽量不支持实现我们的网络请求的，也就是我们的发送网络请求
+> * 异步的操作是不支持的呐
+
+### vuex 中的 actions 的使用
+> * 为了我们的状态管理工具可以在状态管理中进行使用，这个时候我们就可以使用 actions 了
+> * 这个就实现解决了我们的 mutation 的不足
+>   * 在 actions 中提交的是我们的 mutation ，不是直接修改的我们的状态
+>   * actions 中可以包含我们的任何的异步处理代码
+>   * 在 vuex 中，我们进行修改状态的时候，都必须通过我们的 mutation
+> * 使用我们的 actions 的时候，使用 dispatch 来实现获取我们的 action 执行函数
+>   * 在 action 的执行中又通过提交 mutation 事件修改我们的状态管理
+
+```javascript
+import {createStore} from "vuex"
+import { CHANGE_NAME } from "./mutationType.js"
+
+// 开始定义我们的 store
+const store = createStore({
+    // 定于i我们的状态
+    state: () => (
+        {
+            counter: 1,
+            name: "juwenzhang",
+            age: 18
+        }
+    ),
+
+    mutations: {
+        // 第一个参数接收我们的状态管理数据 state
+        // 第二个参数接收的是我们的需要接收的参数
+        increment: (state) => {
+            state.counter++
+        },
+
+        decrement: (state) => {
+            state.counter--
+        },
+
+        [CHANGE_NAME]: (state, payload) => {
+            state.name = payload
+        }
+    },
+
+    getters: {
+        doubleCounter: (state) => {
+            return state.counter * 2
+        },
+
+        // 第一个参数是我们的 state ，第二个参数是我们的 getters
+        message: (state, getters) => {
+            // 这里还可以返回一个函数的
+            // 函数内部再来进行返回我们的新的函数
+            // 这个就是函数式编程了
+            return `${getters.doubleCounter} and ${state.name} and ${state.age}`
+        }
+    },
+
+    actions: {
+        // 第一个参数从表现形式上表现出来的和我们的 state 相似
+        // 但是它实现获取的是我们的执行上下文，在第一个参数中拥有和 state 相同的方法
+        incrementAction: (context) => {
+            context.commit("increment")
+            console.log(context.state)
+            console.log(context.getters)
+        },
+        changeNameAction: (context, payload) => {
+            context.commit(CHANGE_NAME, payload)
+        }
+    }
+})
+
+export default store
+```
+```javascript
+  function changeNameAction() {
+    store.dispatch("changeNameAction", "76433")
+  }
+
+  function incrementAction() {
+    store.dispatch("incrementAction")
+  }
+```
+> * 其对应的辅助函数就是我们的 mapActions 
+> * 这里的话还是需要进行动态的绑定我们的 this 的，.bind{ $store: useStore() }
+
+#### 网络请求 actions
+```javascript
+actions: {
+    // 第一个参数从表现形式上表现出来的和我们的 state 相似
+    // 但是它实现获取的是我们的执行上下文，在第一个参数中拥有和 state 相同的方法
+    incrementAction: (context) => {
+        context.commit("increment")
+        console.log(context.state)
+        console.log(context.getters)
+    }, 
+    changeNameAction: (context, payload) => {
+        context.commit(CHANGE_NAME, payload)
+    }, 
+    // 下面的是公共的实例接口    
+    fetchDataAction: async (context) => {
+        fetch("https://jsonplaceholder.typicode.com/users").then(res => {
+            res.json().then(data => {
+                console.log(data)
+            })
+        })
+
+        const res = await fetch("https://jsonplaceholder.typicode.com/users")
+        const data = await res.json()
+        console.log(data)
+
+        context.commit(CHANGE_NAME, data)
+        
+        // 异步函数自动返回 promise
+    }
+}
+```
+
+### vuex 的 module 的用法
+> * 就是实现的是通过将不同页面中的状态管理用在我们的模块中进行分模块的管理数据
+>   * 由于vuex 的store用法是单一数据源的特性，所以说就出现这种用法，但是在 pinia 中就不是这样的了
+> * 实现的步骤
+>   * 首先在我们的store 目录下面创建一个目录 modules
+>   * 然后按照下面的模式进行书写自己的代码
+>   * 最后组织到我们最开始的状态管理文件中去
+
+```javascript
+export default {
+    state: () => {
+        {
+            
+        }
+    },
+    getters: {
+
+    },
+    mutations: {
+
+    },
+    actions: {
+
+    }
+}
+```
+```javascript
+import {createStore} from "vuex"
+import { CHANGE_NAME } from "./mutationType.js"
+import home from "./modules/home.js"
+
+// 开始定义我们的 store
+const store = createStore({
+    // 定于i我们的状态
+    state: () => (
+        {
+            counter: 1,
+            name: "juwenzhang",
+            age: 18
+        }
+    ),
+
+    mutations: {
+        // 第一个参数接收我们的状态管理数据 state
+        // 第二个参数接收的是我们的需要接收的参数
+        increment: (state) => {
+            state.counter++
+        },
+
+        decrement: (state) => {
+            state.counter--
+        },
+
+        [CHANGE_NAME]: (state, payload) => {
+            state.name = payload
+        }
+    },
+
+    getters: {
+        doubleCounter: (state) => {
+            return state.counter * 2
+        },
+
+        // 第一个参数是我们的 state ，第二个参数是我们的 getters
+        message: (state, getters) => {
+            // 这里还可以返回一个函数的
+            // 函数内部再来进行返回我们的新的函数
+            // 这个就是函数式编程了
+            return `${getters.doubleCounter} and ${state.name} and ${state.age}`
+        }
+    },
+
+    actions: {
+        // 第一个参数从表现形式上表现出来的和我们的 state 相似
+        // 但是它实现获取的是我们的执行上下文，在第一个参数中拥有和 state 相同的方法
+        incrementAction: (context) => {
+            context.commit("increment")
+            console.log(context.state)
+            console.log(context.getters)
+        },
+        changeNameAction: (context, payload) => {
+            context.commit(CHANGE_NAME, payload)
+        },
+        fetchDataAction: async (context) => {
+            fetch("https://jsonplaceholder.typicode.com/users").then(res => {
+                res.json().then(data => {
+                    console.log(data)
+                })
+            })
+
+            const res = await fetch("https://jsonplaceholder.typicode.com/users")
+            const data = await res.json()
+            console.log(data)
+
+            context.commit(CHANGE_NAME, data)
+        }
+    },
+
+    // 引入我们的数据
+    modules: {
+        home: home
+    }
+})
+
+export default store
+```
+
+
+### vue3 语法中强制性使用 vuex 的替代性的用法
+> * 上面我们对 state 以及我们的 getters 实现的映射，我们还是可以通过
+>   * toRefs 结合 useStore 来进行混合使用的
+>   * 虽然不满足官方的建议，但是好用
+>   * 通过这样来实现我们的简单的映射
+>   * toRefs 保证的是结构出来的数据具有响应式
+>   * useStore 保障的是获取我们的状态管理的数据
+>     * `const {} = torefs(reactive(useStore().state))`  实现的是替代 mapSate
+>     * `const {} = toRefs(reactive(useStore().getters))`  实现的是替代 mapGetters
+
+
+### vuex 总结
+> * 首先我们使用我们的 vuex 的时候，我们需要进行安装使用: `npm install vuex`
+> * 然后创建 store 目录，使用 vuex 中的 createStore 创建 store
+> * 最后进行我们全局安装
+> 
+> * 我们的每一个 store 中具有的属性都是含有
+>   * state 状态管理定义的状态变量，函数，返回的是一个对象
+>   * getters 就是我们希望状态管理的数据展示给外部的样式
+>   * mutations 我们对状态管理的数据进行修改必须经过的一个步骤
+>     * 调用的时候，需要使用我们的 commit
+>   * actions 就是实现的是状态管理中发送我们的网络请求
+>     * 调用的时候需要使用我们的 dispatch
+>   * modules 就是实现的是模块化的开发我们的状态管理
+>     * 每个模块中的 getters | mutations | actions 都是会被整合的
+>     * 但是 state 不会被整合，这个时候就需要使用我们的跟上模块名进行访问
+> 
+> * 每种方法对应的辅助映射函数
+>   * 获取我们的 store —— useStore()
+>   * state —— useState
+>   * getters —— useGetters
+>   * mutations —— useMutations
+>   * actions —— useActions
+> * 上面的辅助函数在组合式中进行使用的时候，需要进行我们的动态绑定 this
+>   * 先解构
+>   * 结构函数.bind({ $state: useStore() })
+
+
+## Pinia 状态管理工具
+> * 该工具更好用
+> * 谁 TM 的去使用我们的 Vuex 呀，打死不用~~~
+>   * 在 Pinia 中就去除了我们的 mutations 和 modules
+>   * 只有三个重要的点了: **state | getters | actions**
+> * 安装 pinia: `npm install pinia`
+
+```javascript
+import { createPinia } from 'pinia'
+
+// 开始创建我们的 pinia
+const pinia = createPinia()
+
+export default pinia
+
+// 先创建我们的 pinia 管理工具
+// 然后全局使用 pinia
+```
+
+
+
+## 前端一个页面中的网络请求数据的两种设计管理方案
+> * 在我们的一个路由页面中在对应的路由根组件中进行管理我们的网络请求数据
+>   * 然后在路由组件中子组件中进行对应的展示我们的数据
+> * 另外一种管理方案就是
+>   * 一个页面中的数据通过我们的状态管理工具进行维护管理使用
+>   * 这个时候就实现了我们对数据单独的管理
+>   * 同时发送网络请求的方案是在我们的 actions 中进行管理的
+

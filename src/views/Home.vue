@@ -6,15 +6,48 @@
     <h2>{{ $store.state.counter }}</h2>
     <h2>doubleCounter: {{ $store.getters.doubleCounter }}</h2>
     <h2>message: {{ $store.getters.message }}</h2>
+    <h2>{{ SMDoubleGetters }}-{{ SMMessageGetters }}</h2>
     <button @click="increment">+1</button>
+    <button @click="incrementAction">+1</button>
+    <button @click="changeName">修改Name</button>
+    <button @click="change_name">修改Name</button>
+    <button @click="changeNameAction">修改Name</button>
   </div>
 </template>
 
 <script setup name="Home">
-  import { useStore, mapState } from "vuex"
+  import {useStore, mapState, mapGetters, mapMutations} from "vuex"
   import { computed } from "vue";
+  import {CHANGE_NAME} from "../store/mutationType.js";
 
   const store = useStore()
+
+  const changeName = function() {
+    store.commit(CHANGE_NAME, "76433")
+  }
+
+  const fetchAction = async function() {
+    const data = await store.dispatch("fetchDataAction")
+    console.log(data)
+  }
+
+  fetchAction()
+
+  const change_name = computed(mapMutations(["CHANGE_NAME"]).CHANGE_NAME
+      .bind({ $store: store }, ["76433"]))
+
+  function increment() {
+    // commit 的字符串是我们的状态管理工具中提供的 mutation 函数
+    store.commit("increment")
+  }
+
+  function changeNameAction() {
+    store.dispatch("changeNameAction", "76433")
+  }
+
+  function incrementAction() {
+    store.dispatch("incrementAction")
+  }
 
   const storeCounter = computed(() => {
     return store.state.counter
@@ -37,10 +70,9 @@
   const SMName = computed(name.bind({$store: useStore()}))
   const SMAge = computed(age.bind({$store: useStore()}))
 
-  function increment() {
-    // commit 的字符串是我们的状态管理工具中提供的 mutation 函数
-    store.commit("increment")
-  }
+  const { doubleCounter, message } = mapGetters(["doubleCounter", "message"])
+  const SMDoubleGetters = computed(doubleCounter.bind({ $store: useStore() }))
+  const SMMessageGetters = computed(message.bind({ $store: useStore() }))
 </script>
 
 <style scoped></style>
