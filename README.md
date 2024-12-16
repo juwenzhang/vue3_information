@@ -1414,3 +1414,60 @@ export default pinia
 >   * 这个时候就实现了我们对数据单独的管理
 >   * 同时发送网络请求的方案是在我们的 actions 中进行管理的
 
+
+## vue 官方推荐使用网络请求库 axios
+> * 在我们以前我们使用的网路请求库是 ajax | fetch 两个原生的网络请求
+>   * 但是我们进行使用原生的时候，我们需要对原生的请求库进行封装，这就十分的麻烦了
+>   * 同时我们的网络请求库为我们提供了很多的其他的功能
+>   * 与此同时我们的原生的网络请求库的话，只是支持我们的浏览器运行环境，nodejs 环境不能使用
+>   * `npm install axios`
+> * ![axios01](./public/axios01.png)
+
+### axios 的实例使用
+![](./public/axios02.png)
+* 可以实现的就是我们的多个请求使用不同的实例来进行发送网络请求的分开管理即可
+
+### 配置响应和请求拦截器
+![](./public/axios03.png)
+
+### axios 的封装
+> * 为了避免我们的 axios 和实际项目的耦合性的提高
+> * 这个时候我们就需要进行对某一个库进行抽离自定义封装使用
+> * 从而实现我们后续降低对 axios 的依赖程度
+> * 从而达到最后的库只要已被修改，直接只是修改我们的一个文件即可
+
+```javascript
+import axios from "axios"
+
+class JWZRequest{
+    constructor(baseURL, timeout) {
+        this.instance = axios.create({
+            baseURL: baseURL,
+            timeout: timeout
+        })
+    }
+
+
+    request(config) {
+        return new Promise((resolve, reject) => {
+            this.instance.request(config).then(response => {
+                resolve(response?.data)
+            }).catch(error => {
+                reject(error)
+            })
+        })
+    }
+
+
+    get(config) {
+        return this.request({ ...config, method: 'GET' })
+    }
+
+
+    post(config) {
+        return this.request({ ...config, method: 'POST' })
+    }
+}
+
+export default JWZRequest
+```
